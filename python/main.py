@@ -51,6 +51,7 @@ class Isu:
     image: bytes
     character: str
     jia_user_id: str
+    isu_user_id: str
     created_at: datetime
     updated_at: datetime
 
@@ -360,10 +361,10 @@ def post_isu():
         try:
             query = """
                 INSERT
-                INTO `isu` (`jia_isu_uuid`, `name`, `image`, `jia_user_id`)
-                VALUES (%s, %s, %s, %s)
+                INTO `isu` (`jia_isu_uuid`, `name`, `image`, `jia_user_id`, `isu_user_id`)
+                VALUES (%s, %s, %s, %s, %s)
                 """
-            cur.execute(query, (jia_isu_uuid, isu_name, image, jia_user_id))
+            cur.execute(query, (jia_isu_uuid, isu_name, image, jia_user_id, jia_isu_uuid+jia_user_id))
         except mysql.connector.errors.IntegrityError as e:
             if e.errno == MYSQL_ERR_NUM_DUPLICATE_ENTRY:
                 abort(409, "duplicated: isu")
@@ -391,8 +392,10 @@ def post_isu():
         query = "UPDATE `isu` SET `character` = %s WHERE  `jia_isu_uuid` = %s"
         cur.execute(query, (isu_from_jia["character"], jia_isu_uuid))
 
-        query = "SELECT * FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
-        cur.execute(query, (jia_user_id, jia_isu_uuid))
+        #query = "SELECT * FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"        
+        #cur.execute(query, (jia_user_id, jia_isu_uuid))
+        query = "SELECT * FROM `isu` WHERE `isu_user_id` = %s"
+        cur.execute(query, (jia_isu_uuid+jia_user_id,))
         isu = Isu(**cur.fetchone())
 
         cnx.commit()
@@ -423,8 +426,11 @@ def get_isu_icon(jia_isu_uuid):
     """ISUのアイコンを取得"""
     jia_user_id = get_user_id_from_session()
 
-    query = "SELECT `image` FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
-    res = select_row(query, (jia_user_id, jia_isu_uuid))
+    #query = "SELECT `image` FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
+    #res = select_row(query, (jia_user_id, jia_isu_uuid))
+    query = "SELECT * FROM `isu` WHERE `isu_user_id` = %s"
+    res = select_row(query, (jia_isu_uuid+jia_user_id,))
+
     if res is None:
         raise NotFound("not found: isu")
 
@@ -445,8 +451,10 @@ def get_isu_graph(jia_isu_uuid):
         raise BadRequest("bad format: datetime")
     dt = truncate_datetime(dt, timedelta(hours=1))
 
-    query = "SELECT COUNT(*) FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
-    (count,) = select_row(query, (jia_user_id, jia_isu_uuid), dictionary=False)
+    #query = "SELECT COUNT(*) FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
+    #(count,) = select_row(query, (jia_user_id, jia_isu_uuid), dictionary=False)
+    query = "SELECT COUNT(*) FROM `isu` WHERE `isu_user_id` = %s"
+    (count,) = select_row(query, (jia_isu_uuid+jia_user_id,), dictionary=False)
     if count == 0:
         raise NotFound("not found: isu")
 
@@ -608,8 +616,11 @@ def get_isu_confitions(jia_isu_uuid):
         except:
             raise BadRequest("bad format: start_time")
 
-    query = "SELECT name FROM `isu` WHERE `jia_isu_uuid` = %s AND `jia_user_id` = %s"
-    row = select_row(query, (jia_isu_uuid, jia_user_id))
+    #query = "SELECT name FROM `isu` WHERE `jia_isu_uuid` = %s AND `jia_user_id` = %s"
+    #row = select_row(query, (jia_isu_uuid, jia_user_id))
+    query = "SELECT name FROM `isu` WHERE `isu_user_id` = %s"
+    row = select_row(query, (jia_isu_uuid+jia_user_id,))
+
     if row is None:
         raise NotFound("not found: isu")
     isu_name = row["name"]
