@@ -761,24 +761,22 @@ def post_isu_condition(jia_isu_uuid):
         if count == 0:
             raise NotFound("not found: isu")
 
+        param = []
         for cond in req:
             if not is_valid_condition_format(cond.condition):
                 raise BadRequest("bad request body")
-
-            query = """
+            param.append([jia_isu_uuid,
+                    datetime.fromtimestamp(cond.timestamp, tz=TZ),
+                    cond.is_sitting,
+                    cond.condition,
+                    cond.message])
+        query = """
                 INSERT
                 INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`)
                 VALUES (%s, %s, %s, %s, %s)
                 """
-            cur.execute(
-                query,
-                (
-                    jia_isu_uuid,
-                    datetime.fromtimestamp(cond.timestamp, tz=TZ),
-                    cond.is_sitting,
-                    cond.condition,
-                    cond.message,
-                ),
+        cur.executemany(
+                query, param
             )
 
         cnx.commit()
